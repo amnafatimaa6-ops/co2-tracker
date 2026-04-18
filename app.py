@@ -2,24 +2,33 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-from utils.preprocessing import load_data, get_country_data
-from model.forecast import train_forecast, predict_future
-
 st.set_page_config(page_title="CO₂ Climate Tracker", layout="wide")
 
 st.title("🌍 CO₂ Climate Tracker + Forecast System")
 st.write("AI-powered climate intelligence dashboard")
 
-# Load data
+# -------------------------
+# LOAD DATA (CLEAN + SAFE)
+# -------------------------
+@st.cache_data
+def load_data():
+    url = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
+    df = pd.read_csv(url)
+
+    df = df[['country', 'year', 'co2']].dropna()
+    return df
+
 df = load_data()
 
-# Sidebar
+# -------------------------
+# SIDEBAR
+# -------------------------
 country = st.sidebar.selectbox("Select Country", df['country'].unique())
 
-country_df = get_country_data(df, country)
+country_df = df[df['country'] == country]
 
 # -------------------------
-# 📊 Historical Trend
+# HISTORICAL TREND
 # -------------------------
 st.header("📊 Historical CO₂ Emissions")
 
@@ -29,53 +38,61 @@ fig = px.line(country_df, x="year", y="co2",
 st.plotly_chart(fig, use_container_width=True)
 
 # -------------------------
-# 🤖 Forecast
+# GLOBAL MAP
 # -------------------------
-st.header("🔮 Future Forecast")
-
-model = train_forecast(country_df)
-years, preds = predict_future(model)
-
-forecast_df = pd.DataFrame({
-    "Year": years,
-    "Predicted CO2": preds
-})
-
-fig2 = px.line(forecast_df, x="Year", y="Predicted CO2",
-               title="Future CO₂ Emission Prediction")
-
-st.plotly_chart(fig2, use_container_width=True)
-
-# -------------------------
-# 🌍 Global Map
-# -------------------------
-st.header("🗺️ Global CO₂ Map (Latest Year)")
+st.header("🗺️ Global CO₂ Map")
 
 latest_year = df['year'].max()
 map_df = df[df['year'] == latest_year]
 
-fig3 = px.choropleth(
+fig2 = px.choropleth(
     map_df,
     locations="country",
     locationmode="country names",
     color="co2",
     color_continuous_scale="Reds",
-    title="Global CO₂ Emissions"
+    title="Global CO₂ Emissions (Latest Year)"
 )
+
+st.plotly_chart(fig2, use_container_width=True)
+
+# -------------------------
+# SIMPLE FORECAST (TREND MODEL)
+# -------------------------
+st.header("🔮 Future Trend Forecast")
+
+from sklearn.linear_model import LinearRegression
+import numpy as np
+
+X = country_df['year'].values.reshape(-1, 1)
+y = country_df['co2'].values
+
+model = LinearRegression()
+model.fit(X, y)
+
+future_years = np.arange(2025, 2051).reshape(-1, 1)
+preds = model.predict(future_years)
+
+forecast_df = pd.DataFrame({
+    "Year": future_years.flatten(),
+    "Predicted CO2": preds
+})
+
+fig3 = px.line(forecast_df, x="Year", y="Predicted CO2",
+               title="CO₂ Emission Forecast")
 
 st.plotly_chart(fig3, use_container_width=True)
 
 # -------------------------
-# ⚙️ Scenario Simulator
+# SCENARIO SIMULATOR
 # -------------------------
-st.header("⚙️ Emission Scenario Simulator")
+st.header("⚙️ Emission Reduction Simulator")
 
-reduction = st.slider("Emission Reduction (%)", 0, 100, 20)
+reduction = st.slider("Reduce emissions (%)", 0, 100, 20)
 
-adjusted = forecast_df.copy()
-adjusted["Adjusted CO2"] = adjusted["Predicted CO2"] * (1 - reduction / 100)
+forecast_df["Adjusted CO2"] = forecast_df["Predicted CO2"] * (1 - reduction / 100)
 
-fig4 = px.line(adjusted, x="Year", y="Adjusted CO2",
-               title="What-if Scenario: Reduced Emissions")
+fig4 = px.line(forecast_df, x="Year", y="Adjusted CO2",
+               title="What-if Scenario")
 
 st.plotly_chart(fig4, use_container_width=True)
