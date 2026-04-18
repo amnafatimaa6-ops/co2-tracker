@@ -3,9 +3,6 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 
-# ---------------------------
-# PREP DATA
-# ---------------------------
 def prepare_data(df):
     df = df.sort_values("year")
     data = df["co2"].values.reshape(-1, 1)
@@ -25,9 +22,6 @@ def prepare_data(df):
     return X, y, scaler
 
 
-# ---------------------------
-# TRAIN MODEL
-# ---------------------------
 def train_lstm(df):
     X, y, scaler = prepare_data(df)
 
@@ -44,9 +38,6 @@ def train_lstm(df):
     return model, scaler
 
 
-# ---------------------------
-# FORECAST
-# ---------------------------
 def forecast_lstm(model, scaler, df, steps=25):
     data = df["co2"].values.reshape(-1, 1)
     scaled = scaler.transform(data)
@@ -62,6 +53,7 @@ def forecast_lstm(model, scaler, df, steps=25):
 
     preds = scaler.inverse_transform(np.array(preds).reshape(-1, 1))
 
-    years = np.arange(df["year"].max()+1, df["year"].max()+1+steps)
+    years = np.arange(df["year"].max() + 1,
+                      df["year"].max() + 1 + steps)
 
     return years, preds.flatten()
