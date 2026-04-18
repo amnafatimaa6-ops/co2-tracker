@@ -59,7 +59,7 @@ def forecast_lstm(model, scaler, df, steps=25):
 
     preds = scaler.inverse_transform(np.array(preds).reshape(-1, 1))
 
-    years = np.arange(df["year"].max()+1,
-                      df["year"].max()+1+steps)
+    years = np.arange(df["year"].max() + 1,
+                      df["year"].max() + 1 + steps)
 
     return years, preds.flatten()
