@@ -11,9 +11,9 @@ st.set_page_config(page_title="CO₂ Climate Intelligence System", layout="wide"
 st.title("🌍 CO₂ Climate Intelligence System")
 st.write("Scholarship-grade AI climate analytics platform")
 
-# ---------------------------
-# LOAD DATA
-# ---------------------------
+# -----------------------
+# LOAD DATA (SAFE + LIVE)
+# -----------------------
 @st.cache_data
 def load_data():
     url = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
@@ -23,23 +23,24 @@ def load_data():
 
 df = load_data()
 
-# ---------------------------
+# -----------------------
 # COUNTRY SELECT
-# ---------------------------
+# -----------------------
 country = st.sidebar.selectbox("Select Country", df['country'].unique())
 c_df = df[df['country'] == country]
 
-# ---------------------------
+# -----------------------
 # 📊 HISTORICAL DATA
-# ---------------------------
+# -----------------------
 st.header("📊 Historical Emissions")
 
-fig1 = px.line(c_df, x="year", y="co2", title=f"{country} CO₂ Emissions Over Time")
+fig1 = px.line(c_df, x="year", y="co2",
+               title=f"{country} CO₂ Emissions Over Time")
 st.plotly_chart(fig1, use_container_width=True)
 
-# ---------------------------
+# -----------------------
 # 🤖 MODEL COMPARISON
-# ---------------------------
+# -----------------------
 st.header("🔮 Forecasting Models Comparison")
 
 # Linear Regression
@@ -75,14 +76,14 @@ fig2 = px.line(
     x="Year",
     y="CO2",
     color="Model",
-    title="Climate Forecasting: Classical ML vs Deep Learning (LSTM)"
+    title="Climate Forecasting: ML vs Deep Learning (LSTM)"
 )
 
 st.plotly_chart(fig2, use_container_width=True)
 
-# ---------------------------
+# -----------------------
 # 🌍 GLOBAL MAP
-# ---------------------------
+# -----------------------
 st.header("🌍 Global Emissions Map")
 
 latest = df[df['year'] == df['year'].max()]
@@ -98,12 +99,12 @@ fig3 = px.choropleth(
 
 st.plotly_chart(fig3, use_container_width=True)
 
-# ---------------------------
+# -----------------------
 # ⚙️ SCENARIO SIMULATOR
-# ---------------------------
+# -----------------------
 st.header("⚙️ Climate Scenario Simulator")
 
-st.write("This simulates impact of emission reduction policies on future CO₂ trends.")
+st.write("Simulates impact of emission reduction policies.")
 
 reduction = st.slider("Emission Reduction (%)", 0, 100, 20)
 
@@ -115,21 +116,19 @@ fig4 = px.line(scenario, x="Year", y="Adjusted CO2",
 
 st.plotly_chart(fig4, use_container_width=True)
 
-# ---------------------------
+# -----------------------
 # 🧠 AI INSIGHTS
-# ---------------------------
+# -----------------------
 st.header("🧠 AI Insights")
 
 trend = "increasing" if lr_pred[-1] > lr_pred[0] else "decreasing"
 volatility = np.std(c_df["co2"])
-model_gap = np.mean(np.abs(lr_pred[:len(lstm_pred)] - lstm_pred[:len(lr_pred)]))
 
 st.write(f"""
 - 📈 Trend Direction: **{trend}**
-- 📊 Emission Volatility: **{volatility:.2f}**
-- ⚖️ Model Divergence (LR vs LSTM): **{model_gap:.2f}**
-- 🌍 Interpretation: Emissions show non-linear climate-economic behavior
-- ⚠️ Insight: Policy changes have delayed but significant long-term effects
+- 📊 Volatility: **{volatility:.2f}**
+- 🤖 Models: Linear Regression + LSTM
+- 🌍 Insight: Emissions are non-linear and policy-sensitive
 """)
 
-st.caption("Research Prototype: ML vs Deep Learning comparison for climate forecasting systems.")
+st.caption("Research prototype comparing ML vs Deep Learning for climate forecasting.")
