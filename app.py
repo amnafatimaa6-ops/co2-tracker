@@ -26,10 +26,20 @@ def load_data():
 df = load_data()
 
 # ---------------------------
-# COUNTRY SELECT
+# SAFE COUNTRY FILTER (IMPORTANT FIX)
 # ---------------------------
-country = st.sidebar.selectbox("Select Country", df['country'].unique())
+valid_countries = df.groupby("country")["co2"].count()
+valid_countries = valid_countries[valid_countries > 10].index
+
+country = st.sidebar.selectbox("Select Country", valid_countries)
 c_df = df[df['country'] == country]
+
+# DEBUG SAFETY CHECK
+st.write("Rows loaded:", len(c_df))
+
+if len(c_df) == 0:
+    st.error("No data available for this country.")
+    st.stop()
 
 # ---------------------------
 # 📊 HISTORICAL DATA
@@ -60,52 +70,66 @@ lstm_model, scaler = train_lstm(c_df)
 lstm_years, lstm_pred = forecast_lstm(lstm_model, scaler, c_df)
 
 # ---------------------------
-# 📊 MODEL COMPARISON CHART
+# 📊 MODEL COMPARISON CHART (SAFE)
 # ---------------------------
-lr_df = pd.DataFrame({
-    "Year": future_years.flatten(),
-    "CO2": lr_pred,
-    "Model": "Linear Regression"
-})
-
-lstm_df = pd.DataFrame({
-    "Year": lstm_years,
-    "CO2": lstm_pred,
-    "Model": "LSTM (Deep Learning)"
-})
-
-combined = pd.concat([lr_df, lstm_df])
-
 st.subheader("📊 Model Comparison Chart")
 
-fig2 = px.line(
-    combined,
-    x="Year",
-    y="CO2",
-    color="Model",
-    markers=True,
-    title="Linear Regression vs LSTM Forecast Comparison"
-)
+if len(lr_pred) > 0 and len(lstm_pred) > 0:
 
-st.plotly_chart(fig2, use_container_width=True)
+    lr_df = pd.DataFrame({
+        "Year": future_years.flatten(),
+        "CO2": lr_pred,
+        "Model": "Linear Regression"
+    })
+
+    lstm_df = pd.DataFrame({
+        "Year": lstm_years,
+        "CO2": lstm_pred,
+        "Model": "LSTM (Deep Learning)"
+    })
+
+    combined = pd.concat([lr_df, lstm_df])
+
+    fig2 = px.line(
+        combined,
+        x="Year",
+        y="CO2",
+        color="Model",
+        markers=True,
+        title="Linear Regression vs LSTM Forecast Comparison"
+    )
+
+    st.plotly_chart(fig2, use_container_width=True)
+
+else:
+    st.warning("Model outputs not available")
 
 # ---------------------------
-# 📉 EVALUATION METRICS
+# 📉 EVALUATION METRICS (SAFE)
 # ---------------------------
 st.subheader("📉 Model Evaluation Metrics")
 
-min_len = min(len(lr_pred), len(lstm_pred))
+if len(lr_pred) > 0 and len(lstm_pred) > 0:
 
-lr_trim = lr_pred[:min_len]
-lstm_trim = lstm_pred[:min_len]
+    min_len = min(len(lr_pred), len(lstm_pred))
 
-mae = mean_absolute_error(lr_trim, lstm_trim)
-rmse = np.sqrt(mean_squared_error(lr_trim, lstm_trim))
+    mae = mean_absolute_error(
+        lr_pred[:min_len],
+        lstm_pred[:min_len]
+    )
 
-st.write(f"""
-- 📊 MAE (LR vs LSTM): **{mae:.2f}**
-- 📊 RMSE (LR vs LSTM): **{rmse:.2f}**
-""")
+    rmse = np.sqrt(mean_squared_error(
+        lr_pred[:min_len],
+        lstm_pred[:min_len]
+    ))
+
+    st.write(f"""
+    - 📊 MAE (LR vs LSTM): **{mae:.2f}**
+    - 📊 RMSE (LR vs LSTM): **{rmse:.2f}**
+    """)
+
+else:
+    st.warning("Metrics not available")
 
 # ---------------------------
 # 🌍 GLOBAL MAP
@@ -156,10 +180,10 @@ volatility = np.std(c_df["co2"])
 
 st.write(f"""
 - 📈 Trend Direction: **{trend}**
-- 📊 Emission Volatility: **{volatility:.2f}**
+- 📊 Volatility: **{volatility:.2f}**
 - 🤖 Models: Linear Regression + LSTM Deep Learning
-- 🌍 Insight: Emissions show non-linear climate-economic behavior
-- ⚠️ Policy Impact: Highly sensitive to reduction scenarios
+- 🌍 Insight: Emissions are non-linear and policy-sensitive
+- ⚠️ Interpretation: Long-term forecasting depends on economic structure shifts
 """)
 
 st.caption("Research Prototype: ML vs Deep Learning comparison for climate forecasting systems.")
