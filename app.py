@@ -1,52 +1,120 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+
 from sklearn.linear_model import LinearRegression
 from model.lstm_forecast import train_lstm, forecast_lstm
 
-st.header("🔮 Model Comparison: ML vs Deep Learning")
+st.set_page_config(page_title="CO₂ Climate Intelligence System", layout="wide")
 
-# -------------------------
-# LINEAR REGRESSION MODEL
-# -------------------------
+st.title("🌍 CO₂ Climate Intelligence System")
+st.write("Scholarship-grade AI climate analytics platform")
+
+# ---------------------------
+# LOAD DATA (LIVE DATASET)
+# ---------------------------
+@st.cache_data
+def load_data():
+    url = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
+    df = pd.read_csv(url)
+    df = df[['country', 'year', 'co2']].dropna()
+    return df
+
+df = load_data()
+
+country = st.sidebar.selectbox("Select Country", df['country'].unique())
+c_df = df[df['country'] == country]
+
+# ---------------------------
+# 📊 HISTORICAL DATA
+# ---------------------------
+st.header("📊 Historical Emissions")
+
+fig1 = px.line(c_df, x="year", y="co2", title=f"{country} CO₂ Emissions")
+st.plotly_chart(fig1, use_container_width=True)
+
+# ---------------------------
+# 🤖 MODEL COMPARISON
+# ---------------------------
+st.header("🔮 Forecasting Models Comparison")
+
+# Linear Regression
 X = c_df['year'].values.reshape(-1, 1)
 y = c_df['co2'].values
 
-lr_model = LinearRegression()
-lr_model.fit(X, y)
+lr = LinearRegression()
+lr.fit(X, y)
 
-future_years = np.arange(2025, 2051).reshape(-1, 1)
-lr_preds = lr_model.predict(future_years)
+future = np.arange(2025, 2051).reshape(-1, 1)
+lr_pred = lr.predict(future)
 
-# -------------------------
-# LSTM MODEL
-# -------------------------
+# LSTM Model
 lstm_model, scaler = train_lstm(c_df)
-lstm_years, lstm_preds = forecast_lstm(lstm_model, scaler, c_df)
+lstm_years, lstm_pred = forecast_lstm(lstm_model, scaler, c_df)
 
-# -------------------------
-# CREATE DATAFRAMES
-# -------------------------
 lr_df = pd.DataFrame({
-    "Year": future_years.flatten(),
-    "CO2": lr_preds,
+    "Year": future.flatten(),
+    "CO2": lr_pred,
     "Model": "Linear Regression"
 })
 
 lstm_df = pd.DataFrame({
     "Year": lstm_years,
-    "CO2": lstm_preds,
+    "CO2": lstm_pred,
     "Model": "LSTM (Deep Learning)"
 })
 
 combined = pd.concat([lr_df, lstm_df])
 
-# -------------------------
-# VISUAL COMPARISON
-# -------------------------
-fig = px.line(
-    combined,
-    x="Year",
-    y="CO2",
-    color="Model",
-    title="Model Comparison: Linear Regression vs LSTM Forecast"
+fig2 = px.line(combined, x="Year", y="CO2", color="Model",
+               title="Model Comparison: ML vs Deep Learning")
+
+st.plotly_chart(fig2, use_container_width=True)
+
+# ---------------------------
+# 🌍 GLOBAL MAP
+# ---------------------------
+st.header("🌍 Global Emissions Map")
+
+latest = df[df['year'] == df['year'].max()]
+
+fig3 = px.choropleth(
+    latest,
+    locations="country",
+    locationmode="country names",
+    color="co2",
+    color_continuous_scale="Reds",
+    title="Global CO₂ Emissions"
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig3, use_container_width=True)
+
+# ---------------------------
+# ⚙️ SCENARIO SIMULATOR
+# ---------------------------
+st.header("⚙️ Climate Scenario Simulator")
+
+reduction = st.slider("Emission Reduction (%)", 0, 100, 20)
+
+scenario = lr_df.copy()
+scenario["Adjusted CO2"] = scenario["CO2"] * (1 - reduction/100)
+
+fig4 = px.line(scenario, x="Year", y="Adjusted CO2",
+               title="Policy Impact Simulation")
+
+st.plotly_chart(fig4, use_container_width=True)
+
+# ---------------------------
+# 🧠 INSIGHTS
+# ---------------------------
+st.header("🧠 AI Insights")
+
+trend = "increasing" if lr_pred[-1] > lr_pred[0] else "decreasing"
+
+st.write(f"""
+- 📈 Trend: **{trend}**
+- 🤖 Models: Linear Regression vs LSTM Deep Learning
+- 🌍 Dataset: Global CO₂ emissions (OWID)
+- ⚠️ Insight: Climate trajectory is non-linear and policy-sensitive
+""")
