@@ -12,7 +12,7 @@ st.title("🌍 CO₂ Climate Intelligence System")
 st.write("Scholarship-grade AI climate analytics platform")
 
 # ---------------------------
-# LOAD DATA (LIVE DATASET)
+# LOAD DATA (LIVE)
 # ---------------------------
 @st.cache_data
 def load_data():
@@ -23,6 +23,9 @@ def load_data():
 
 df = load_data()
 
+# ---------------------------
+# COUNTRY SELECT
+# ---------------------------
 country = st.sidebar.selectbox("Select Country", df['country'].unique())
 c_df = df[df['country'] == country]
 
@@ -43,18 +46,18 @@ st.header("🔮 Forecasting Models Comparison")
 X = c_df['year'].values.reshape(-1, 1)
 y = c_df['co2'].values
 
-lr = LinearRegression()
-lr.fit(X, y)
+lr_model = LinearRegression()
+lr_model.fit(X, y)
 
-future = np.arange(2025, 2051).reshape(-1, 1)
-lr_pred = lr.predict(future)
+future_years = np.arange(2025, 2051).reshape(-1, 1)
+lr_pred = lr_model.predict(future_years)
 
 # LSTM Model
 lstm_model, scaler = train_lstm(c_df)
 lstm_years, lstm_pred = forecast_lstm(lstm_model, scaler, c_df)
 
 lr_df = pd.DataFrame({
-    "Year": future.flatten(),
+    "Year": future_years.flatten(),
     "CO2": lr_pred,
     "Model": "Linear Regression"
 })
@@ -91,7 +94,7 @@ fig3 = px.choropleth(
 st.plotly_chart(fig3, use_container_width=True)
 
 # ---------------------------
-# ⚙️ SCENARIO SIMULATOR
+# ⚙️ SCENARIO SIMULATION
 # ---------------------------
 st.header("⚙️ Climate Scenario Simulator")
 
@@ -106,15 +109,19 @@ fig4 = px.line(scenario, x="Year", y="Adjusted CO2",
 st.plotly_chart(fig4, use_container_width=True)
 
 # ---------------------------
-# 🧠 INSIGHTS
+# 🧠 AI INSIGHTS
 # ---------------------------
 st.header("🧠 AI Insights")
 
 trend = "increasing" if lr_pred[-1] > lr_pred[0] else "decreasing"
+volatility = np.std(c_df["co2"])
 
 st.write(f"""
-- 📈 Trend: **{trend}**
-- 🤖 Models: Linear Regression vs LSTM Deep Learning
+- 📈 Current trend: **{trend}**
+- 📊 Emission volatility: **{volatility:.2f}**
+- 🤖 Models: Linear Regression + LSTM Deep Learning
 - 🌍 Dataset: Global CO₂ emissions (OWID)
-- ⚠️ Insight: Climate trajectory is non-linear and policy-sensitive
+- ⚠️ Insight: Emissions show non-linear, policy-sensitive behavior
 """)
+
+st.caption("Comparison of classical ML vs deep learning forecasting for climate systems.")
