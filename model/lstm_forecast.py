@@ -33,9 +33,15 @@ def train_lstm(df):
     ])
 
     model.compile(optimizer='adam', loss='mse')
-    model.fit(X, y, epochs=10, batch_size=16, verbose=0)
 
-    return model, scaler
+    history = model.fit(
+        X, y,
+        epochs=10,
+        batch_size=16,
+        verbose=0
+    )
+
+    return model, scaler, history
 
 
 def forecast_lstm(model, scaler, df, steps=25):
@@ -53,7 +59,7 @@ def forecast_lstm(model, scaler, df, steps=25):
 
     preds = scaler.inverse_transform(np.array(preds).reshape(-1, 1))
 
-    years = np.arange(df["year"].max() + 1,
-                      df["year"].max() + 1 + steps)
+    years = np.arange(df["year"].max()+1,
+                      df["year"].max()+1+steps)
 
     return years, preds.flatten()
