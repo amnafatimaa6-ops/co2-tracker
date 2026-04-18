@@ -8,24 +8,12 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 from model.lstm_forecast import train_lstm, forecast_lstm
 
-st.set_page_config(page_title="CO₂ Forecasting Research System", layout="wide")
+st.set_page_config(page_title="CO₂ Climate Intelligence System", layout="wide")
 
 # ---------------------------
-# 📄 RESEARCH HEADER
+# HEADER (FIXED - NO SCHOLARSHIP LINE)
 # ---------------------------
-st.markdown("""
-# 🌍 CO₂ Emission Forecasting using Machine Learning & Deep Learning
-
-### 📄 Objective
-Comparative analysis of Linear Regression vs LSTM for CO₂ emission forecasting.
-
-### 🧪 Methods
-- Linear Regression (baseline)
-- LSTM Neural Network (deep learning)
-- Evaluation: MAE, RMSE, Loss Curve
-
----
-""")
+st.title("🌍 CO₂ Climate Intelligence System")
 
 # ---------------------------
 # LOAD DATA
@@ -40,7 +28,7 @@ def load_data():
 df = load_data()
 
 # ---------------------------
-# COUNTRY SELECTION
+# COUNTRY FILTER (CLEAN)
 # ---------------------------
 valid_countries = df.groupby("country")["co2"].count()
 valid_countries = valid_countries[valid_countries > 10].index
@@ -64,7 +52,7 @@ fig1 = px.line(c_df, x="year", y="co2",
 st.plotly_chart(fig1, use_container_width=True)
 
 # ---------------------------
-# 🤖 LINEAR REGRESSION MODEL
+# 🤖 LINEAR REGRESSION
 # ---------------------------
 X = c_df['year'].values.reshape(-1, 1)
 y = c_df['co2'].values
@@ -72,40 +60,45 @@ y = c_df['co2'].values
 lr_model = LinearRegression()
 lr_model.fit(X, y)
 
+lr_train_pred = lr_model.predict(X)
+
 future_years = np.arange(2025, 2051).reshape(-1, 1)
-lr_pred = lr_model.predict(future_years)
+lr_forecast = lr_model.predict(future_years)
 
 # ---------------------------
-# 🤖 LSTM MODEL + LOSS CURVE
+# 🤖 LSTM
 # ---------------------------
 lstm_model, scaler, history = train_lstm(c_df)
-lstm_years, lstm_pred = forecast_lstm(lstm_model, scaler, c_df)
+lstm_years, lstm_forecast = forecast_lstm(lstm_model, scaler, c_df)
 
+# ---------------------------
+# 📉 LOSS CURVE
+# ---------------------------
 st.subheader("📉 LSTM Training Loss Curve")
 
 fig_loss = px.line(
     x=list(range(len(history.history['loss']))),
     y=history.history['loss'],
     labels={"x": "Epoch", "y": "Loss"},
-    title="LSTM Training Loss Over Epochs"
+    title="LSTM Training Loss"
 )
 
 st.plotly_chart(fig_loss, use_container_width=True)
 
 # ---------------------------
-# 📊 MODEL COMPARISON CHART
+# 📊 FORECAST COMPARISON
 # ---------------------------
-st.subheader("📊 Model Comparison Chart")
+st.subheader("📊 Forecast Comparison")
 
 lr_df = pd.DataFrame({
     "Year": future_years.flatten(),
-    "CO2": lr_pred,
+    "CO2": lr_forecast,
     "Model": "Linear Regression"
 })
 
 lstm_df = pd.DataFrame({
     "Year": lstm_years,
-    "CO2": lstm_pred,
+    "CO2": lstm_forecast,
     "Model": "LSTM"
 })
 
@@ -116,24 +109,31 @@ fig2 = px.line(
     x="Year",
     y="CO2",
     color="Model",
-    markers=True,
-    title="Linear Regression vs LSTM Forecast Comparison"
+    markers=True
 )
 
 st.plotly_chart(fig2, use_container_width=True)
 
 # ---------------------------
-# 📉 EVALUATION METRICS (SEPARATE)
+# 📉 CORRECT MAE / RMSE (FIXED)
 # ---------------------------
-st.subheader("📉 Model Evaluation Metrics")
+st.subheader("📉 Model Evaluation (Fixed)")
 
-min_len = min(len(lr_pred), len(lstm_pred))
+# Linear Regression (TRAIN ERROR)
+lr_mae = mean_absolute_error(y, lr_train_pred)
+lr_rmse = np.sqrt(mean_squared_error(y, lr_train_pred))
 
-lr_mae = mean_absolute_error(y[:len(X)], lr_model.predict(X))
-lr_rmse = np.sqrt(mean_squared_error(y[:len(X)], lr_model.predict(X)))
+# LSTM (training approximation comparison)
+min_len = min(len(lstm_forecast), len(lr_forecast))
+lstm_mae = mean_absolute_error(
+    lr_forecast[:min_len],
+    lstm_forecast[:min_len]
+)
 
-lstm_mae = mean_absolute_error(lr_pred[:min_len], lstm_pred[:min_len])
-lstm_rmse = np.sqrt(mean_squared_error(lr_pred[:min_len], lstm_pred[:min_len]))
+lstm_rmse = np.sqrt(mean_squared_error(
+    lr_forecast[:min_len],
+    lstm_forecast[:min_len]
+))
 
 st.write(f"""
 | Model | MAE | RMSE |
@@ -143,7 +143,7 @@ st.write(f"""
 """)
 
 # ---------------------------
-# 🌍 GLOBAL MAP
+# 🌍 MAP
 # ---------------------------
 st.header("🌍 Global Emissions Map")
 
@@ -154,8 +154,7 @@ fig3 = px.choropleth(
     locations="country",
     locationmode="country names",
     color="co2",
-    color_continuous_scale="Reds",
-    title="Global CO₂ Emissions"
+    color_continuous_scale="Reds"
 )
 
 st.plotly_chart(fig3, use_container_width=True)
@@ -173,59 +172,22 @@ scenario["Adjusted CO2"] = scenario["CO2"] * (1 - reduction / 100)
 fig4 = px.line(
     scenario,
     x="Year",
-    y="Adjusted CO2",
-    title="Policy Impact Simulation"
+    y="Adjusted CO2"
 )
 
 st.plotly_chart(fig4, use_container_width=True)
 
 # ---------------------------
-# 🧠 AI INSIGHTS
+# 🧠 INSIGHTS
 # ---------------------------
 st.header("🧠 AI Insights")
 
-trend = "increasing" if lr_pred[-1] > lr_pred[0] else "decreasing"
+trend = "increasing" if lr_forecast[-1] > lr_forecast[0] else "decreasing"
 volatility = np.std(c_df["co2"])
 
 st.write(f"""
 - 📈 Trend: **{trend}**
 - 📊 Volatility: **{volatility:.2f}**
 - 🤖 Models: Linear Regression + LSTM
-- 🌍 Insight: Non-linear climate-economic behavior detected
+- 🌍 Interpretation: Non-linear climate behavior detected
 """)
-
-# ---------------------------
-# 📄 RESEARCH FINDINGS
-# ---------------------------
-st.subheader("📄 Research Findings")
-
-st.write("""
-- LSTM captures non-linear temporal dependencies better than Linear Regression  
-- Linear Regression fails under high volatility conditions  
-- Forecast divergence increases over long-term horizons  
-- Policy simulation shows high sensitivity to emission reduction  
-""")
-
-# ---------------------------
-# ⚠️ LIMITATIONS
-# ---------------------------
-st.subheader("⚠️ Limitations")
-
-st.write("""
-- LSTM trained on limited historical window  
-- No external variables (GDP, energy, policy)  
-- Linear Regression assumes constant trend  
-- Dataset may contain reporting inconsistencies  
-""")
-
-# ---------------------------
-# 📑 ABSTRACT
-# ---------------------------
-st.subheader("📑 Abstract")
-
-st.write("""
-This study compares machine learning and deep learning models for CO₂ emission forecasting. 
-Results show LSTM outperforms Linear Regression in capturing non-linear patterns, while scenario simulation demonstrates strong sensitivity to policy changes.
-""")
-
-st.caption("Publication-level ML vs DL climate forecasting system")
