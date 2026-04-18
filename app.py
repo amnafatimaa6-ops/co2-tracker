@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import requests
 
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -24,7 +25,7 @@ def load_data():
     df = pd.read_csv(url)
     df = df[['country', 'year', 'co2']].dropna()
 
-    # ❌ REMOVE REGIONS / AGGREGATES
+    # remove regions (clean research dataset)
     invalid = [
         "World", "Africa", "Asia", "Europe",
         "European Union", "North America",
@@ -32,7 +33,6 @@ def load_data():
     ]
     df = df[~df["country"].isin(invalid)]
 
-    # keep only meaningful countries
     df = df.groupby("country").filter(lambda x: len(x) > 15)
 
     return df
@@ -43,7 +43,7 @@ df = load_data()
 # COUNTRY SELECTION
 # ---------------------------
 country = st.sidebar.selectbox("Select Country", sorted(df["country"].unique()))
-c_df = df[df["country"] == country]
+c_df = df[df['country'] == country]
 
 st.write("Rows loaded:", len(c_df))
 
@@ -58,8 +58,43 @@ st.header("📊 Historical Emissions")
 
 fig1 = px.line(c_df, x="year", y="co2",
                title=f"{country} CO₂ Emissions Over Time")
-
 st.plotly_chart(fig1, use_container_width=True)
+
+# ---------------------------
+# 🌤️ OPEN-METEO LIVE WEATHER (NO API KEY)
+# ---------------------------
+st.header("🌤️ Live Weather (Open-Meteo)")
+
+city = st.text_input("Enter City", "London")
+
+def get_weather(city_name):
+    geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city_name}"
+    geo_data = requests.get(geo_url).json()
+
+    if "results" not in geo_data:
+        return None
+
+    lat = geo_data["results"][0]["latitude"]
+    lon = geo_data["results"][0]["longitude"]
+
+    weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
+    weather_data = requests.get(weather_url).json()
+
+    return weather_data.get("current_weather", None)
+
+weather = get_weather(city)
+
+if weather:
+    st.success("Live Weather Data Retrieved")
+
+    st.write(f"""
+    - 🌡️ Temperature: {weather['temperature']} °C
+    - 🌬️ Wind Speed: {weather['windspeed']} km/h
+    - 🧭 Wind Direction: {weather['winddirection']}°
+    - ⏱️ Weather Code: {weather['weathercode']}
+    """)
+else:
+    st.warning("City not found or data unavailable")
 
 # ---------------------------
 # 🤖 LINEAR REGRESSION
@@ -96,38 +131,6 @@ fig_loss = px.line(
 st.plotly_chart(fig_loss, use_container_width=True)
 
 # ---------------------------
-# 📊 CONFIDENCE INTERVAL (LSTM)
-# ---------------------------
-lstm_std = np.std(lstm_forecast)
-upper = lstm_forecast + (1.96 * lstm_std)
-lower = lstm_forecast - (1.96 * lstm_std)
-
-fig_ci = px.line(
-    x=lstm_years,
-    y=lstm_forecast,
-    title="LSTM Forecast with Confidence Interval"
-)
-
-fig_ci.add_scatter(
-    x=lstm_years,
-    y=upper,
-    mode="lines",
-    line=dict(dash="dot"),
-    name="Upper Bound"
-)
-
-fig_ci.add_scatter(
-    x=lstm_years,
-    y=lower,
-    mode="lines",
-    fill="tonexty",
-    line=dict(dash="dot"),
-    name="Lower Bound"
-)
-
-st.plotly_chart(fig_ci, use_container_width=True)
-
-# ---------------------------
 # 📊 FORECAST COMPARISON
 # ---------------------------
 st.subheader("📊 Forecast Comparison")
@@ -157,24 +160,17 @@ fig2 = px.line(
 st.plotly_chart(fig2, use_container_width=True)
 
 # ---------------------------
-# 📉 REAL EVALUATION METRICS
+# 📉 EVALUATION METRICS
 # ---------------------------
-st.subheader("📉 Model Evaluation (Research-Grade)")
+st.subheader("📉 Model Evaluation")
 
 lr_mae = mean_absolute_error(y, lr_train_pred)
 lr_rmse = np.sqrt(mean_squared_error(y, lr_train_pred))
 
 min_len = min(len(lr_forecast), len(lstm_forecast))
 
-lstm_mae = mean_absolute_error(
-    lr_forecast[:min_len],
-    lstm_forecast[:min_len]
-)
-
-lstm_rmse = np.sqrt(mean_squared_error(
-    lr_forecast[:min_len],
-    lstm_forecast[:min_len]
-))
+lstm_mae = mean_absolute_error(lr_forecast[:min_len], lstm_forecast[:min_len])
+lstm_rmse = np.sqrt(mean_squared_error(lr_forecast[:min_len], lstm_forecast[:min_len]))
 
 st.write(f"""
 | Model | MAE | RMSE |
@@ -184,7 +180,7 @@ st.write(f"""
 """)
 
 # ---------------------------
-# 🌍 MAP
+# 🌍 GLOBAL MAP
 # ---------------------------
 st.header("🌍 Global Emissions Map")
 
@@ -230,6 +226,6 @@ st.write(f"""
 - 📈 Trend: **{trend}**
 - 📊 Volatility: **{volatility:.2f}**
 - 🤖 Models: Linear Regression + LSTM
-- 🌍 Insight: Non-linear climate dynamics detected
-- 📊 Uncertainty: Confidence interval added for LSTM
+- 🌍 Insight: Non-linear climate behavior detected
+- 🌤️ Live Weather integrated via Open-Meteo API
 """)
