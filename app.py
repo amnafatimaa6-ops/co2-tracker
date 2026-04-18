@@ -12,7 +12,7 @@ st.title("🌍 CO₂ Climate Intelligence System")
 st.write("Scholarship-grade AI climate analytics platform")
 
 # ---------------------------
-# LOAD DATA (LIVE)
+# LOAD DATA
 # ---------------------------
 @st.cache_data
 def load_data():
@@ -34,7 +34,7 @@ c_df = df[df['country'] == country]
 # ---------------------------
 st.header("📊 Historical Emissions")
 
-fig1 = px.line(c_df, x="year", y="co2", title=f"{country} CO₂ Emissions")
+fig1 = px.line(c_df, x="year", y="co2", title=f"{country} CO₂ Emissions Over Time")
 st.plotly_chart(fig1, use_container_width=True)
 
 # ---------------------------
@@ -52,7 +52,7 @@ lr_model.fit(X, y)
 future_years = np.arange(2025, 2051).reshape(-1, 1)
 lr_pred = lr_model.predict(future_years)
 
-# LSTM Model
+# LSTM
 lstm_model, scaler = train_lstm(c_df)
 lstm_years, lstm_pred = forecast_lstm(lstm_model, scaler, c_df)
 
@@ -70,8 +70,13 @@ lstm_df = pd.DataFrame({
 
 combined = pd.concat([lr_df, lstm_df])
 
-fig2 = px.line(combined, x="Year", y="CO2", color="Model",
-               title="Model Comparison: ML vs Deep Learning")
+fig2 = px.line(
+    combined,
+    x="Year",
+    y="CO2",
+    color="Model",
+    title="Climate Forecasting: Classical ML vs Deep Learning (LSTM)"
+)
 
 st.plotly_chart(fig2, use_container_width=True)
 
@@ -94,14 +99,16 @@ fig3 = px.choropleth(
 st.plotly_chart(fig3, use_container_width=True)
 
 # ---------------------------
-# ⚙️ SCENARIO SIMULATION
+# ⚙️ SCENARIO SIMULATOR
 # ---------------------------
 st.header("⚙️ Climate Scenario Simulator")
+
+st.write("This simulates impact of emission reduction policies on future CO₂ trends.")
 
 reduction = st.slider("Emission Reduction (%)", 0, 100, 20)
 
 scenario = lr_df.copy()
-scenario["Adjusted CO2"] = scenario["CO2"] * (1 - reduction/100)
+scenario["Adjusted CO2"] = scenario["CO2"] * (1 - reduction / 100)
 
 fig4 = px.line(scenario, x="Year", y="Adjusted CO2",
                title="Policy Impact Simulation")
@@ -115,13 +122,14 @@ st.header("🧠 AI Insights")
 
 trend = "increasing" if lr_pred[-1] > lr_pred[0] else "decreasing"
 volatility = np.std(c_df["co2"])
+model_gap = np.mean(np.abs(lr_pred[:len(lstm_pred)] - lstm_pred[:len(lr_pred)]))
 
 st.write(f"""
-- 📈 Current trend: **{trend}**
-- 📊 Emission volatility: **{volatility:.2f}**
-- 🤖 Models: Linear Regression + LSTM Deep Learning
-- 🌍 Dataset: Global CO₂ emissions (OWID)
-- ⚠️ Insight: Emissions show non-linear, policy-sensitive behavior
+- 📈 Trend Direction: **{trend}**
+- 📊 Emission Volatility: **{volatility:.2f}**
+- ⚖️ Model Divergence (LR vs LSTM): **{model_gap:.2f}**
+- 🌍 Interpretation: Emissions show non-linear climate-economic behavior
+- ⚠️ Insight: Policy changes have delayed but significant long-term effects
 """)
 
-st.caption("Comparison of classical ML vs deep learning forecasting for climate systems.")
+st.caption("Research Prototype: ML vs Deep Learning comparison for climate forecasting systems.")
