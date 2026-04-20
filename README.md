@@ -30,19 +30,35 @@ It specifically evaluates whether deep learning models (LSTM) outperform classic
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 🧪 Experimental Setup
+
 Dataset: CO₂ emissions data from Our World in Data
+
 Problem Type: Time-series forecasting
+
 Preprocessing:
+
 Normalization / scaling
+
 Feature engineering (lag features, trend features)
+
 Validation Method: Chronological train-test split (no data leakage)
-Models:
+
+-----------------------------------------
+Models:       
+-----------------------------------------
 Linear Regression (baseline ML model)
+-----------------------------------------
 LSTM (sequence-based deep learning model)
+-----------------------------------------
 Evaluation Metrics:
+-----------------------------------------
 MAE (Mean Absolute Error)
+-----------------------------------------
 RMSE (Root Mean Squared Error)
+-----------------------------------------
+
 🧠 Key Research Findings
+
 📌 Finding 1: Simpler models can outperform deep learning
 
 Linear Regression consistently achieved lower prediction error than LSTM across multiple CO₂ datasets.
@@ -60,6 +76,7 @@ Model complexity does not guarantee superior performance in structured, low-nois
 LSTM underperformed due to limited dataset size (~76–165 time steps depending on country).
 
 Implication:
+
 Deep learning models require significantly larger datasets to generalize effectively.
 
 📌 Finding 3: Feature engineering dominates model complexity
@@ -67,6 +84,7 @@ Deep learning models require significantly larger datasets to generalize effecti
 Engineered temporal features (lags and trends) significantly improved Linear Regression performance.
 
 Implication:
+
 In structured time-series problems, feature quality can outweigh model architecture complexity.
 
 ---------------------------------------------------------------------------------------------------
