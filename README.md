@@ -15,11 +15,17 @@ The system integrates:
 
 
 📊 Historical CO₂ emissions analysis
+
 🤖 Machine Learning (Linear Regression baseline)
+
 🧠 Deep Learning (LSTM model)
+
 🌤️ Real-time weather data (Open-Meteo API)
+
 🌍 Global emissions visualization
+
 ⚙️ Climate scenario simulation
+
 🎯 Research Objective
 
 This project investigates how model complexity interacts with dataset size and structure in climate time-series forecasting.
@@ -119,7 +125,9 @@ This adds environmental context to emissions analysis.
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🌍 Global Visualization
+🌍 Global Visualization 
+
+
 Choropleth world map of CO₂ emissions
 Country-wise emission comparison
 Emission intensity visualization
@@ -128,9 +136,13 @@ Emission intensity visualization
 Users can simulate:
 
 📉 Emission reduction percentage
+
 🔮 Future CO₂ trajectory changes
+
 🌍 Policy impact scenarios
+
 🧠 AI Insights
+
 Global CO₂ emissions show a persistent upward trend
 Data exhibits low to moderate volatility
 Linear patterns dominate most country-level datasets
@@ -179,20 +191,30 @@ In low-data, low-noise, and near-linear regimes, classical models can outperform
 
 This project demonstrates:
 
-Real-world climate data analysis
+Real-world climate data analysis 
+
 Classical ML vs Deep Learning comparison
+
 Time-series forecasting techniques
+
 Feature engineering impact analysis
+
 Real-time API integration
+
 Experimental evaluation methodology
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 🧭 Future Improvements
+
 Add Transformer-based forecasting models
+
 Integrate NASA / Copernicus climate datasets
+
 Add anomaly detection for emission spikes
+
 Expand LSTM with larger temporal datasets
+
 Add climate risk scoring system
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -211,5 +233,7 @@ It combines data science, machine learning, deep learning, and real-time systems
 💡 Final Note
 
 🟢 Designed as a scholarship-ready AI research prototype
+
 🟢 Suitable for data science portfolio evaluation
+
 🟢 Demonstrates real-world ML vs DL empirical analysis
