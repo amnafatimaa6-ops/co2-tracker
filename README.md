@@ -1,7 +1,5 @@
-🌍 CO₂ Climate Intelligence System
-
-Machine Learning vs Deep Learning for Climate Forecasting
-
+# 🌍 CO₂ Climate Intelligence System
+## Machine Learning vs Deep Learning for Climate Forecasting
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 📌 Overview
